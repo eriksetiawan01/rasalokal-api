@@ -11,12 +11,10 @@ class Order extends Model
     protected $fillable = [
         'order_number',
         'customer_name',
-        'customer_phone',
         'table_number',
         'order_type',
         'total_amount',
         'status',
-        'payment_status',
         'note',
     ];
 
@@ -25,7 +23,7 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
-    public function payment()
+    public function payments()
     {
         return $this->hasOne(Payment::class);
     }

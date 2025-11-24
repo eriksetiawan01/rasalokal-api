@@ -78,18 +78,16 @@ class OrderController extends Controller
 
                     // update stock
                     $menu->stock -= $item['quantity'];
-                    $menu->save();
+                    $menu->save();  
                 }
 
                 $order = Order::create([
                     'order_number'   => $orderNumber,
                     'customer_name'  => $request->customer_name,
-                    'customer_phone' => $request->customer_phone,
                     'table_number'   => $request->table_number,
                     'order_type'     => $request->order_type,
                     'total_amount'   => $total,
                     'status'         => 'pending',
-                    'payment_status' => 'unpaid',
                     'note'           => $request->note,
                 ]);
 
@@ -147,7 +145,6 @@ class OrderController extends Controller
 
         $validator = Validator::make($request->all(), [
             'status' => 'in:pending,processing,completed,cancelled',
-            'payment_status' => 'in:paid,unpaid',
             'items' => 'array|min:1',
             'items.*.menu_id' => 'exists:menus,id',
             'items.*.quantity' => 'integer|min:1',
@@ -206,7 +203,7 @@ class OrderController extends Controller
                 }
 
                 $order->update(array_merge(
-                    $request->only(['status', 'payment_status']),
+                    $request->only(['status']),
                     ['total_amount' => $total]
                 ));
             });
@@ -233,13 +230,6 @@ class OrderController extends Controller
                 'success' => false,
                 'message' => 'Order not found'
             ], 404);
-        }
-
-        if ($order->payment_status === 'paid') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Paid orders cannot be deleted.'
-            ], 400);
         }
 
         try {

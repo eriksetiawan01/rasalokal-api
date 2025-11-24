@@ -5,6 +5,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -22,11 +23,13 @@ Route::apiResource('/categories', CategoryController::class)->only(['index', 'sh
 Route::apiResource('/menus', MenuController::class)->only(['index', 'show']);
 Route::apiResource('orders', OrderController::class)->only(['store']);
 
+Route::apiResource('payments', PaymentController::class);
+Route::apiResource('orders', OrderController::class)->only(['index', 'show', 'update', 'destroy']);
+
+Route::apiResource('/users', UserController::class);
 
 // Protected Routes
 Route::middleware(['auth:api'])->group(function () {
-    Route::apiResource('orders', OrderController::class)->only(['index', 'show', 'update', 'destroy']);
-    Route::apiResource('payments', PaymentController::class);
 
     Route::middleware(['role:admin'])->group(function () {
         Route::apiResource('/categories', CategoryController::class)->only(['store', 'update', 'destroy']);

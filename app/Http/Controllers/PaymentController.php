@@ -10,12 +10,9 @@ use Illuminate\Support\Facades\DB;
 
 class PaymentController extends Controller
 {
-    /**
-     * Display a listing of payments.
-     */
     public function index()
     {
-        $payments = Payment::with('order')->latest()->get();
+        $payments = Payment::with(['order', 'user:id,name'])->latest()->get();
 
         return response()->json([
             'success' => true,
@@ -24,46 +21,43 @@ class PaymentController extends Controller
         ]);
     }
 
-    /**
-     * Store a newly created payment.
-     */
     public function store(Request $request)
     {
         $request->validate([
-            'order_id' => 'required|exists:orders,id',
-            'amount_paid' => 'required|numeric|min:0',
-            'payment_method' => 'required|in:cash,qris'
+            'order_id'        => 'required|exists:orders,id',
+            'amount_paid'     => 'required|numeric|min:0',
+            'payment_method'  => 'required|in:cash,qris'
         ]);
 
         return DB::transaction(function () use ($request) {
 
             $order = Order::findOrFail($request->order_id);
 
-            // Prevent duplicate payment
-            if ($order->payment_status === 'paid') {
+            //Cek apakah order sudah pernah dibayar
+            if ($order->payments()->exists()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Order has already been paid.'
+                    'message' => 'Order already has a payment.'
                 ], 400);
             }
 
-            // Calculate change
-            $change = $request->amount_paid - $order->total_amount;
+            // Hitung total & kembalian
+            $totalAmount = $order->total_amount;
+            $change = max($request->amount_paid - $totalAmount, 0);
 
-            // Create payment record
+            // Generate kode pembayaran unik
+            $kode = 'PMT-' . now()->format('YmdHis') . '-' . rand(1000, 9999);
+
+            // Buat payment
             $payment = Payment::create([
-                'order_id' => $order->id,
-                'user_id' => Auth::id(),
-                'payment_method' => $request->payment_method,
-                'amount_paid' => $request->amount_paid,
-                'change_amount' => max($change, 0),
-                'status' => 'success'
-            ]);
-
-            // Update order status
-            $order->update([
-                'payment_status' => 'paid',
-                'status' => 'processing'
+                'order_id'        => $order->id,
+                'user_id'         => Auth::id(),
+                'kode_pembayaran' => $kode,
+                'payment_method'  => $request->payment_method,
+                'total_amount'    => $totalAmount,
+                'amount_paid'     => $request->amount_paid,
+                'change_amount'   => $change,
+                'status'          => 'success',
             ]);
 
             return response()->json([
@@ -74,9 +68,6 @@ class PaymentController extends Controller
         });
     }
 
-    /**
-     * Display payment detail.
-     */
     public function show(string $id)
     {
         $payment = Payment::with('order')->findOrFail($id);
@@ -88,16 +79,13 @@ class PaymentController extends Controller
         ]);
     }
 
-    /**
-     * Update payment (rarely needed).
-     */
     public function update(Request $request, string $id)
     {
         $payment = Payment::findOrFail($id);
 
         $request->validate([
             'payment_method' => 'in:cash,qris',
-            'status' => 'in:success,failed,canceled'
+            'status'         => 'in:success,failed'
         ]);
 
         $payment->update($request->only(['payment_method', 'status']));
@@ -109,9 +97,6 @@ class PaymentController extends Controller
         ]);
     }
 
-    /**
-     * Delete payment (only for admin)
-     */
     public function destroy(string $id)
     {
         $payment = Payment::findOrFail($id);

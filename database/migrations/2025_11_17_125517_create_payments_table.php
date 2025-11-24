@@ -15,10 +15,12 @@ return new class extends Migration
             $table->id();
             $table->foreignId('order_id')->constrained('orders')->onDelete('cascade');
             $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('set null');
+            $table->string('kode_pembayaran')->unique();
             $table->enum('payment_method', ['cash', 'qris'])->default('cash');
+            $table->decimal('total_amount', 10, 2);
             $table->decimal('amount_paid', 10, 2);
             $table->decimal('change_amount', 10, 2)->default(0);
-            $table->enum('status', ['success', 'failed'])->default('success');
+            $table->enum('status', ['success', 'pending', 'failed'])->default('pending');
             $table->timestamps();
         });
     }

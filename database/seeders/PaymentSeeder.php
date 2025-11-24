@@ -14,12 +14,14 @@ class PaymentSeeder extends Seeder
     public function run(): void
     {
         Payment::create([
-            'order_id'       => 2,
-            'user_id'        => 2,  
-            'payment_method' => 'cash',
-            'amount_paid'    => 25000,
-            'change_amount'  => 3000,
-            'status'         => 'success'
+            'order_id'        => 2,
+            'user_id'         => 2,
+            'kode_pembayaran' => 'PMT-TEST-0001',
+            'payment_method'  => 'cash',
+            'total_amount'    => 22000,
+            'amount_paid'     => 25000,
+            'change_amount'   => 3000,
+            'status'          => 'success'
         ]);
     }
 }

@@ -15,12 +15,10 @@ return new class extends Migration
             $table->id();
             $table->string('order_number')->unique();
             $table->string('customer_name');
-            $table->string('customer_phone')->nullable();
             $table->string('table_number')->nullable();
             $table->enum('order_type', ['dine_in', 'take_away']);
             $table->decimal('total_amount', 10, 2);
             $table->enum('status', ['pending', 'processing', 'completed', 'cancelled'])->default('pending');
-            $table->enum('payment_status', ['unpaid', 'paid'])->default('unpaid');
             $table->text('note')->nullable();
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();

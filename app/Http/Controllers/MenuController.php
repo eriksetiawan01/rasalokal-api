@@ -112,7 +112,7 @@ class MenuController extends Controller
         }
 
         //2. validator
-        $validator = Validator::make(request()->all(), [
+        $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'description' => 'required|string',
             'price' => 'required|numeric',
@@ -124,8 +124,7 @@ class MenuController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 "success" => false,
-                "message" => "Validation Error.",
-                "errors" => $validator->errors()
+                "message" => $validator->errors()
             ], 422);
         }
 

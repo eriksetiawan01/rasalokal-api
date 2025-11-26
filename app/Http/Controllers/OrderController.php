@@ -78,7 +78,7 @@ class OrderController extends Controller
 
                     // update stock
                     $menu->stock -= $item['quantity'];
-                    $menu->save();  
+                    $menu->save();
                 }
 
                 $order = Order::create([

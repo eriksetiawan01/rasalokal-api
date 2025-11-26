@@ -25,7 +25,7 @@ class OrderItemController extends Controller
 
     public function store(Request $request)
     {
-    
+
     $order = Order::findOrFail($request->order_id);
     $menu = Menu::findOrFail($request->menu_id);
 
@@ -144,8 +144,8 @@ class OrderItemController extends Controller
             'order_id' => $request->order_id,
             'menu_id' => $request->menu_id,
             'quantity' => $request->quantity,
-            'price' => $request->$price,
-            'subtotal' => $request->$subtotal,
+            'price' => $price,
+            'subtotal' => $subtotal,
         ];
 
         $item->update($data);

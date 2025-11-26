@@ -85,10 +85,12 @@ class PaymentController extends Controller
 
         $request->validate([
             'payment_method' => 'in:cash,qris',
-            'status'         => 'in:success,failed'
+            'status'         => 'in:success,failed',
+            'amount_paid'   => 'numeric|min:0',
+            'change_amount'  => 'numeric|min:0',
         ]);
 
-        $payment->update($request->only(['payment_method', 'status']));
+        $payment->update($request->only(['payment_method', 'status', 'amount_paid', 'change_amount']));
 
         return response()->json([
             'success' => true,

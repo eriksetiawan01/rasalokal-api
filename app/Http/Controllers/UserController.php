@@ -33,7 +33,20 @@ class UserController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $user = User::find($id);
+
+    if (!$user) {
+        return response()->json([
+            "success" => false,
+            "message" => "User not found",
+        ], 404);
+    }
+
+    return response()->json([
+        "success" => true,
+        "message" => "User retrieved successfully",
+        "data" => $user
+    ], 200);
     }
 
     /**
@@ -41,7 +54,33 @@ class UserController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $user = User::find($id);
+
+    if (!$user) {
+        return response()->json([
+            "success" => false,
+            "message" => "User not found",
+        ], 404);
+    }
+
+    // Validasi data
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'email' => 'required|email|unique:users,email,' . $user->id,
+        'role' => 'required|string|in:admin,kasir',
+    ]);
+
+    // Update user
+    $user->name = $request->name;
+    $user->email = $request->email;
+    $user->role = $request->role;
+    $user->save();
+
+    return response()->json([
+        "success" => true,
+        "message" => "User updated successfully",
+        "data" => $user
+    ], 200);
     }
 
     /**
@@ -49,6 +88,20 @@ class UserController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $user = User::find($id);
+
+        if (!$user) {
+            return response()->json([
+                "success" => false,
+                "message" => "Resource not found",
+            ], 404);
+        }
+
+        $user->delete();
+
+        return response()->json([
+            "success" => true,
+            "message" => "User deleted successfully",
+        ]);
     }
 }

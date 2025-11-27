@@ -116,7 +116,7 @@ class OrderController extends Controller
 
     public function show(string $id)
     {
-        $order = Order::with('orderItems.menu', 'payment')->find($id);
+        $order = Order::with('orderItems.menu', 'payments')->find($id);
 
         if (!$order) {
             return response()->json([
@@ -143,11 +143,17 @@ class OrderController extends Controller
             ], 404);
         }
 
+        // VALIDASI
         $validator = Validator::make($request->all(), [
+            'customer_name' => 'string',
+            'table_number' => 'nullable|integer',
+            'order_type' => 'in:dine_in,take_away',
+            'note' => 'nullable|string',
             'status' => 'in:pending,processing,completed,cancelled',
-            'items' => 'array|min:1',
-            'items.*.menu_id' => 'exists:menus,id',
-            'items.*.quantity' => 'integer|min:1',
+
+            'items' => 'nullable|array|min:1',
+            'items.*.menu_id' => 'required_with:items|exists:menus,id',
+            'items.*.quantity' => 'required_with:items|integer|min:1',
         ]);
 
         if ($validator->fails()) {
@@ -159,26 +165,30 @@ class OrderController extends Controller
         }
 
         try {
-            DB::transaction(function() use ($request, $order) {
+            DB::transaction(function () use ($request, $order) {
+
                 $total = 0;
 
                 if ($request->has('items')) {
-                    // kembalikan stock lama
-                    foreach ($order->orderItems as $oldItem) {
-                        $oldMenu = $oldItem->menu;
-                        $oldMenu->stock += $oldItem->quantity;
-                        $oldMenu->save();
+
+                    // Kembalikan stok lama
+                    foreach ($order->orderItems as $old) {
+                        Menu::where('id', $old->menu_id)
+                            ->increment('stock', $old->quantity);
                     }
 
+                    // Hapus order_items lama
                     $order->orderItems()->delete();
 
+                    // Ambil menu baru
                     $menuIds = collect($request->items)->pluck('menu_id');
                     $menus = Menu::whereIn('id', $menuIds)->get()->keyBy('id');
 
-                    $orderItemsPayload = [];
+                    $payload = [];
 
                     foreach ($request->items as $item) {
                         $menu = $menus[$item['menu_id']];
+
                         if ($menu->stock < $item['quantity']) {
                             throw new \Exception("Stok menu '{$menu->name}' tidak mencukupi.");
                         }
@@ -186,27 +196,36 @@ class OrderController extends Controller
                         $subtotal = $menu->price * $item['quantity'];
                         $total += $subtotal;
 
-                        $orderItemsPayload[] = [
+                        $payload[] = [
                             'menu_id' => $menu->id,
                             'quantity' => $item['quantity'],
                             'price' => $menu->price,
                             'subtotal' => $subtotal,
                         ];
 
-                        $menu->stock -= $item['quantity'];
-                        $menu->save();
+                        // Kurangi stok baru
+                        Menu::where('id', $menu->id)
+                            ->decrement('stock', $item['quantity']);
                     }
 
-                    $order->orderItems()->createMany($orderItemsPayload);
+                    $order->orderItems()->createMany($payload);
+
                 } else {
                     $total = $order->total_amount;
                 }
 
-                $order->update(array_merge(
-                    $request->only(['status']),
-                    ['total_amount' => $total]
-                ));
+                $order->update([
+                    'customer_name' => $request->customer_name ?? $order->customer_name,
+                    'table_number' => $request->table_number ?? $order->table_number,
+                    'order_type' => $request->order_type ?? $order->order_type,
+                    'note' => $request->note ?? $order->note,
+                    'status' => $request->status ?? $order->status,
+                    'total_amount' => $total,
+                ]);
             });
+
+            $order->refresh();
+
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -220,6 +239,8 @@ class OrderController extends Controller
             'data' => $order->load('orderItems.menu')
         ], 200);
     }
+
+
 
     public function destroy(string $id)
     {

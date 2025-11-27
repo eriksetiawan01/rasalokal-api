@@ -12,7 +12,21 @@ class PaymentController extends Controller
 {
     public function index()
     {
-        $payments = Payment::with(['order', 'user:id,name'])->latest()->get();
+        $role = Auth::user()->role; // Ambil role user saat ini
+
+        // Ambil semua payments dengan relasi order
+        $payments = Payment::with('order')->latest()->get();
+
+        if ($role === 'kasir') {
+            // Jika kasir, sembunyikan kolom user_id
+            $payments = $payments->map(function ($payment) {
+                unset($payment->user_id);
+                return $payment;
+            });
+        } else {
+            // Kalau admin, tampilkan relasi user (nama kasir)
+            $payments->load('user:id,name'); // Pastikan relation 'user' ada di model Payment
+        }
 
         return response()->json([
             'success' => true,

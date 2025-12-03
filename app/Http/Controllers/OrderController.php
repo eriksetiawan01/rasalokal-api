@@ -13,7 +13,7 @@ class OrderController extends Controller
 {
     public function index()
     {
-        $orders = Order::with('orderItems.menu')->latest()->get();
+        $orders = Order::with('orderItems.menu', 'payment')->latest()->get();
 
         if ($orders->isEmpty()) {
             return response()->json([
@@ -116,7 +116,7 @@ class OrderController extends Controller
 
     public function show(string $id)
     {
-        $order = Order::with('orderItems.menu', 'payments')->find($id);
+        $order = Order::with('orderItems.menu', 'payment')->find($id);
 
         if (!$order) {
             return response()->json([

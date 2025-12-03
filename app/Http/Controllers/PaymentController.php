@@ -48,7 +48,7 @@ class PaymentController extends Controller
             $order = Order::findOrFail($request->order_id);
 
             //Cek apakah order sudah pernah dibayar
-            if ($order->payments()->exists()) {
+            if ($order->payment()->exists()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Order already has a payment.'
@@ -73,6 +73,10 @@ class PaymentController extends Controller
                 'change_amount'   => $change,
                 'status'          => 'success',
             ]);
+
+            // UPDATE STATUS PAYMENT DI ORDER
+                $order->payment_status = 'paid';
+                $order->save();
 
             return response()->json([
                 'success' => true,

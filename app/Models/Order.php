@@ -16,6 +16,7 @@ class Order extends Model
         'total_amount',
         'status',
         'note',
+        'payment_status'
     ];
 
     public function orderItems()
@@ -23,7 +24,7 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
-    public function payments()
+    public function payment()
     {
         return $this->hasOne(Payment::class);
     }
